@@ -13,13 +13,13 @@
 #|---------------------------------------------------------------------------------------------------------|
 
 if [ "$1" == "setup" ] || [ "$1" == "all" ];then
-    if [ ! -d "model" ]; then
+    if [ ! -d "CAR196/model" ]; then
         echo "model directory does not exist, creating model..."
-        mkdir -p model
+        mkdir -p CAR196/model
     fi
-    if [ ! -d "log" ]; then
+    if [ ! -d "CAR196/log" ]; then
         echo "log directory does not exist, creating log ..."
-        mkdir -p log
+        mkdir -p CAR196/log
     fi
     echo "Start filternet ... "
     python filternet.py > CAR196/log/filternet.log 
