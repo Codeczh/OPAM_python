@@ -12,7 +12,7 @@ from PIL import Image
 from patchnet import FilterNet
 import operator
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+#os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
 
@@ -417,7 +417,7 @@ class FusionPredict(object):
             print(x[len(x)-1-i])
 if __name__ == '__main__':
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root,'CAR196')
+    root = os.path.join(root,'CUB200')
     config = yaml.load(open(root+'/config.yaml', 'r'))
 
     path = {

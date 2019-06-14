@@ -428,7 +428,7 @@ if __name__ == '__main__':
     thread = args.threadid
 
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root, 'CAR196')
+    root = os.path.join(root, 'CUB200')
     config = yaml.load(open(os.path.join(root, 'config.yaml'), 'r'))
     path = {
         # 'car196': os.path.join(root, 'data/cub200'),
@@ -452,4 +452,4 @@ if __name__ == '__main__':
     ####commond
     # cd TIP/TIP
     # conda activate lijiang
-    # python CAM.py --threadid 0 >CAR196/log/CAM/CAM0.log
+    # python CAM.py --threadid 0 >CUB200/log/CAM/CAM0.log

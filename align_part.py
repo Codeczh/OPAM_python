@@ -16,7 +16,7 @@ from torch.utils.data import Dataset, DataLoader
 
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+#os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 class Part(Dataset):
     def __init__(self, data_root, transform = None,train=True):
@@ -369,7 +369,7 @@ class PartAligner(object):
 
 if __name__ == '__main__':
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root,'CAR196')
+    root = os.path.join(root,'CUB200')
     config = yaml.load(open(os.path.join(root,'config.yaml'), 'r'))
 
     path = {

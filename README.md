@@ -11,3 +11,4 @@ Then, the code can be run as the following command step by step:\<br>
 		 *5  $ bash run.sh fusion\<br>  
 		 or just run $ bash run.sh all \<br>  
 the final result is in /log/fusion_predict.log\<br>  
+

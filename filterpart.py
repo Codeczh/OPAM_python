@@ -14,7 +14,7 @@ from apex import amp
 
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+#os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 def boxoverlap(a,b): #IOU
     #a=[m,4] b=[1,4]
@@ -244,7 +244,7 @@ def filter_out_2_TIP(threadID,phase):
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~config
 
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root, 'CAR196')
+    root = os.path.join(root, 'CUB200')
 
     count = 0
     boxes_num = 1000
