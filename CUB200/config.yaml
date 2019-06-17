@@ -1,0 +1,12 @@
+base_lr: 1e-2
+batch_size: 10
+epochs: 60
+weight_decay: 1e-5
+saliencynet_model: model/saliencynet_vgg16_best_epoch.pth
+filternet_model: model/filternet_vgg19_best_epoch.pth
+classnet_model: model/patchnet_vgg19_bn_best_epoch.pth
+objectnet_model: model/objectnet_vgg19_bn_best_epoch.pth
+partnet_model: model/partnet_vgg19_bn_best_epoch.pth
+patchnet_vgg19bn_model: model/patchnet_vgg19bn_best_epoch.pth
+objectnet_vgg19bn_my_model: model/object_vgg19bn_mybbox_best_epoch.pth
+partnet_vgg19bn_my_model: model/partnet_vgg19bn_mypart_best_epoch.pth

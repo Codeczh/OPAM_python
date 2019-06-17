@@ -96,7 +96,7 @@ def region_proposal(path,id):
 def thread(id):
     print('start {}-----'.format(id))
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root, 'CAR196')
+    root = os.path.join(root, 'CUB200')
     config = yaml.load(open(root + '/config.yaml', 'r'))
     path = {
         'root': root

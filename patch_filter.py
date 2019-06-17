@@ -1,7 +1,7 @@
 import os
 import torch
 import torchvision
-from filternet import FilterNet
+from filternet_bn_rerun import FilterNet
 from torch.utils import data
 import yaml
 import time
@@ -12,7 +12,7 @@ import math
 
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+#os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 class Patch(data.Dataset):
     """
@@ -256,7 +256,7 @@ class PatchFilter(object):
 
 if __name__ == '__main__':
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root, 'CAR196')
+    root = os.path.join(root, 'CUB200')
     config = yaml.load(open(os.path.join(root, 'config.yaml'), 'r'))
     path = {
         # 'cub200': os.path.join(root, 'data/cub200'),

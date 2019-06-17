@@ -26,7 +26,7 @@ from apex import amp
 #NVIDIA = 3   #set GPU device
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+#os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 
 class Car196(torch.utils.data.Dataset):
@@ -416,7 +416,7 @@ def show_params(params, paths):
 
 def filter_net_fine_tune():
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root, 'CAR196')
+    root = os.path.join(root, 'CUB200')
     config = yaml.load(open(os.path.join(root, 'config.yaml'), 'r'))
     config['weight_decay'] = float(config['weight_decay'])
     config['base_lr'] = float(config['base_lr'])

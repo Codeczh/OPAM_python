@@ -14,7 +14,7 @@ import torch
 import torchvision
 from Car_dataset import Car196
 from torch.utils.data import DataLoader
-#from filternet import FilterNet
+#from filternet_bn_rerun import FilterNet
 import yaml
 import torch.nn.functional as F
 from apex import amp
@@ -23,7 +23,7 @@ from apex import amp
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
 
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+#os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 class SaliencyNet(torch.nn.Module):
     """
@@ -240,7 +240,7 @@ def show_params(params, paths):
 
 def saliency_net_fine_tune():
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root, 'CAR196')
+    root = os.path.join(root, 'CUB200')
     config = yaml.load(open(os.path.join(root, 'config.yaml'), 'r'))
     config['weight_decay'] = float(config['weight_decay'])
     config['base_lr'] = 0.1*float(config['base_lr'])
