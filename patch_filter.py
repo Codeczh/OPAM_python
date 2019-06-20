@@ -8,7 +8,7 @@ import time
 import numpy as np
 from PIL import Image
 import math
-
+import argparse
 
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
@@ -169,14 +169,15 @@ class Patch(data.Dataset):
 
 
 class PatchFilter(object):
-    def __init__(self, path):
+    def __init__(self, options, path):
         super().__init__()
         # self._regions_data = []
         # self._regions_label = []
         # self._regions_origin_img_id = []
+        self._options = options
         self._path = path
         # Net
-        net = FilterNet(pretrained=False)
+        net = FilterNet(pretrained=False,self._options['classnum'])
         self._net = net.cuda()
         self._net.load_state_dict(torch.load(self._path['load_model'],map_location={'cuda:2':'cuda:0'}))  # filternet_vgg19_best_epoch.pth
         #, map_location={'cuda:2': 'cuda:0'}
@@ -255,9 +256,14 @@ class PatchFilter(object):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='manual to this script')
+    parser.add_argument('--dataset', type=str, default='CUB200')
+    args = parser.parse_args()
+    dataset = args.dataset
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root, 'CUB200')
+    root = os.path.join(root, dataset)
     config = yaml.load(open(os.path.join(root, 'config.yaml'), 'r'))
+    config['classnum'] = int(config['classnum'])
     path = {
         # 'cub200': os.path.join(root, 'data/cub200'),
         'root': root,
@@ -270,7 +276,7 @@ if __name__ == '__main__':
             assert os.path.isdir(path[k])
 
     start = time.time()
-    patchFilter = PatchFilter(path)
+    patchFilter = PatchFilter(config, path)
     patchFilter.patch_filter()
     end = time.time()
     print('~~~~~~~~~~~Runtime: {}~~~~~~~~~~~'.format(end - start))

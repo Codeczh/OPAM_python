@@ -7,12 +7,13 @@ import torchvision
 import time
 import datetime
 from torch.utils.data import DataLoader
-from patchnet_bn_rerun import FilterNet
+from patchnet_bn_rerun import PatchNet
 import yaml
 import numpy as np
 from PIL import Image
 import math
 from apex import amp
+import argparse
 
 #os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 torch.manual_seed(0)
@@ -20,7 +21,7 @@ torch.cuda.manual_seed(0)
 
 
 
-class Car196_object(torch.utils.data.Dataset):
+class Data_part(torch.utils.data.Dataset):
     '''
     Arguments:
         _root               [str]                   root directory of the dataset
@@ -214,7 +215,7 @@ class Car196_object(torch.utils.data.Dataset):
 
 
 
-class Objectnet(object):
+class Partnet(object):
     def __init__(self, options, path):
         '''
 
@@ -226,7 +227,7 @@ class Objectnet(object):
         self._options = options
         self._path = path
         # Network
-        net = FilterNet()
+        net = PatchNet(classnum = self._options['classnum'])
         # torch.cuda.set_device(NVIDIA)
         # net.load_state_dict(torch.load(os.path.join(self._path['model'], 'patchnet_vgg19_best_epoch.pth'),map_location={'cuda:2':'cuda:0'}))
         net.load_state_dict(torch.load(os.path.join(self._path['model'], self._path['load_model']),
@@ -258,11 +259,11 @@ class Objectnet(object):
             torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         # data
-        train_data = Car196_object(root=self._path['root'], train=True, transform=train_transform)
-        test_image_data = Car196_object(root=self._path['root'], train=False, test='image', transform=test_transform)
-        test_bbox_data = Car196_object(root=self._path['root'], train=False, test='bbox', transform=test_transform)
-        test_part1_data = Car196_object(root=self._path['root'], train=False, test='part1', transform=test_transform)
-        test_part2_data = Car196_object(root=self._path['root'], train=False, test='part2', transform=test_transform)
+        train_data = Data_part(root=self._path['root'], train=True, transform=train_transform)
+        test_image_data = Data_part(root=self._path['root'], train=False, test='image', transform=test_transform)
+        test_bbox_data = Data_part(root=self._path['root'], train=False, test='bbox', transform=test_transform)
+        test_part1_data = Data_part(root=self._path['root'], train=False, test='part1', transform=test_transform)
+        test_part2_data = Data_part(root=self._path['root'], train=False, test='part2', transform=test_transform)
         self._train_loader = DataLoader(train_data, batch_size=self._options['batch_size'],
                                         shuffle=True, num_workers=4, pin_memory=True)
         self._test_image_loader = DataLoader(test_image_data, batch_size=self._options['batch_size'],
@@ -376,12 +377,13 @@ def show_params(params, paths):
     print('|-----------------------------------------------------')
 
 
-def filter_net_fine_tune():
+def filter_net_fine_tune(dataset):
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root, 'CUB200')
+    root = os.path.join(root, dataset)
     config = yaml.load(open(os.path.join(root, 'config.yaml'), 'r'))
     config['weight_decay'] = float(config['weight_decay'])
     config['base_lr'] = float(config['base_lr'])
+    config['classnum'] = int(config['classnum'])
 
     path = {
         # 'cub200': os.path.join(root, 'data/cub200'),
@@ -395,12 +397,16 @@ def filter_net_fine_tune():
     #     assert os.path.isdir(path[d])
 
     show_params(config, path)
-    manager = Objectnet(config, path)
+    manager = Partnet(config, path)
     manager.train()
 
 
 if __name__ == '__main__':
     start = time.time()
-    filter_net_fine_tune()
+    parser = argparse.ArgumentParser(description='manual to this script')
+    parser.add_argument('--dataset', type=str, default='CUB200')
+    args = parser.parse_args()
+    dataset = args.dataset
+    filter_net_fine_tune(dataset)
     end = time.time()
     print('~~~~~~~~~~~Runtime: {}~~~~~~~~~~~'.format(end - start))

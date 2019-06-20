@@ -24,8 +24,9 @@ import matplotlib.pyplot as plt
 from collections import OrderedDict
 from PIL import Image
 import argparse
+import math
 
-class Car196(torch.utils.data.Dataset):
+class Data(torch.utils.data.Dataset):
     """
     Arguments:
         _root                [str]                   root directory of the dataset
@@ -67,8 +68,8 @@ class Car196(torch.utils.data.Dataset):
         # load data
         if self._train:
             id_2_train = np.genfromtxt(os.path.join(self._root, 'train.list'), dtype=str)
-
-            for idx in range(1000*self.threadid,min(1000*(self.threadid+1),id_2_train.shape[0])):
+            step = math.floor((id_2_train.shape[0]-1)/8)
+            for idx in range(step*self.threadid,min(step*(self.threadid+1),id_2_train.shape[0])):
                 # fp = open(os.path.join(image_path, id_2_train[idx, 0]),'rb')
                 # image = Image.open(fp)
                 image = Image.open(os.path.join(image_path, id_2_train[idx, 0]))
@@ -94,8 +95,8 @@ class Car196(torch.utils.data.Dataset):
 
         else:
             id_2_test = np.genfromtxt(os.path.join(self._root, 'test.list'), dtype=str)
-
-            for idx in range(1000*self.threadid,min(1000*(self.threadid+1),id_2_test.shape[0])):
+            step = math.floor((id_2_test.shape[0]-1)/8)
+            for idx in range(step*self.threadid,min(step*(self.threadid+1),id_2_test.shape[0])):
                 image = Image.open(os.path.join(image_path, id_2_test[idx, 0]))
                 size = image.size
                 label = int(id_2_test[idx, 1])  # Label starts from 0
@@ -162,7 +163,7 @@ class Car196(torch.utils.data.Dataset):
             return len(self._test_data)
 
 class ObjectExtractor(object):
-    def __init__(self, data_model_path,thread=0):
+    def __init__(self, options ,data_model_path,thread=0):
         super().__init__()
         self.conv_feature_blobs = []
         self._thread = thread
@@ -171,10 +172,10 @@ class ObjectExtractor(object):
         # self._img_bbox = []
         # self._img_label = []
         # self._img_saliency = []
-
+        self._options = options
         self._path = data_model_path
         # Net
-        net = SaliencyNet(pretrained=False)
+        net = SaliencyNet(pretrained=False,classnum = self._options['classnum'])
         # torch.cuda.set_device(1)
         # self._net = net.cuda()
 
@@ -199,10 +200,10 @@ class ObjectExtractor(object):
             torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         # TODO: here, only training phase involves saliency generation and bbox extraction
-        train_data = Car196(self._path['root'], train=True, threadid=thread,transform=data_transform, get_raw_imgsize=True,get_nameid=True)
-        self._old_train_data = Car196(self._path['root'], train=True, threadid=thread,transform=None, get_raw_imgsize=False,get_nameid=True)
-        self._old_test_data = Car196(self._path['root'], train=False, threadid=thread,transform=None, get_raw_imgsize=False,get_nameid=True)
-        test_data = Car196(self._path['root'], train=False, threadid=thread,transform=data_transform, get_raw_imgsize=True,get_nameid=True)
+        train_data = Data(self._path['root'], train=True, threadid=thread,transform=data_transform, get_raw_imgsize=True,get_nameid=True)
+        self._old_train_data = Data(self._path['root'], train=True, threadid=thread,transform=None, get_raw_imgsize=False,get_nameid=True)
+        self._old_test_data = Data(self._path['root'], train=False, threadid=thread,transform=None, get_raw_imgsize=False,get_nameid=True)
+        test_data = Data(self._path['root'], train=False, threadid=thread,transform=data_transform, get_raw_imgsize=True,get_nameid=True)
         self._train_dataloader = DataLoader(train_data, batch_size=64, shuffle=False, num_workers=4, pin_memory=True)
         self._test_dataloader = DataLoader(test_data, batch_size=64, shuffle=False, num_workers=4, pin_memory=True)
         # self._old_train_dataloader = DataLoader(old_train_data, batch_size=1, shuffle=False, num_workers=4, pin_memory=True)
@@ -423,13 +424,15 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='manual to this script')
     parser.add_argument('--threadid', type=int, default=0)
-    #parser.add_argument('--batch-size', type=int, default=32)
+    parser.add_argument('--dataset', type=str, default='CUB200')
     args = parser.parse_args()
     thread = args.threadid
+    dataset = args.dataset
 
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root, 'CUB200')
+    root = os.path.join(root, dataset)
     config = yaml.load(open(os.path.join(root, 'config.yaml'), 'r'))
+    config['classnum'] = int(config['classnum'])
     path = {
         # 'car196': os.path.join(root, 'data/cub200'),
         'root': root,
@@ -444,7 +447,7 @@ if __name__ == '__main__':
             assert os.path.isdir(path[k])
     print('>>>--->>>\nUsing model:\n\t{} \n>>>--->>>'.format(path['load_model']))
     start = time.time()
-    extract_manager = ObjectExtractor(path,thread)
+    extract_manager = ObjectExtractor(config, path,thread)
     extract_manager.saliency_extractor()
     end = time.time()
     print('~~~~~~~~~~~Runtime: {}~~~~~~~~~~~'.format(end - start))
@@ -452,4 +455,4 @@ if __name__ == '__main__':
     ####commond
     # cd TIP/TIP
     # conda activate lijiang
-    # python CAM.py --threadid 0 >CUB200/log/CAM/CAM0.log
+    # python CAM.py --threadid 0 --dataset CUB200 >CUB200/log/CAM/CAM0.log

@@ -3,12 +3,13 @@ import torch
 import torchvision
 import time
 from torch.utils.data import DataLoader
-from patchnet_bn_rerun import FilterNet
+from patchnet_bn_rerun import PatchNet
 import yaml
 import numpy as np
 from PIL import Image
 import math
 from apex import amp
+import argparse
 
 
 #os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -17,7 +18,7 @@ torch.manual_seed(0)
 torch.cuda.manual_seed(0)
 
 
-class Car196_object(torch.utils.data.Dataset):
+class Data_object(torch.utils.data.Dataset):
     '''
     Arguments:
         _root               [str]                   root directory of the dataset
@@ -149,7 +150,7 @@ class Objectnet(object):
         self._options = options
         self._path =path
         # Network
-        net = FilterNet()
+        net = PatchNet(classnum = self._options['classnum'])
         #torch.cuda.set_device(NVIDIA)
         net.load_state_dict(torch.load(os.path.join(self._path['model'], self._path['load_model'])))#,map_location={'cuda:2':'cuda:0'}))
         self._net = net.cuda()
@@ -177,9 +178,9 @@ class Objectnet(object):
             torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         # data
-        train_data = Car196_object(root=self._path['root'],train=True,transform=train_transform)      #train-bbox,train-image
-        test_data = Car196_object(root=self._path['root'],train=False,test=True, transform=test_transform)   #test-bbox
-        test_image_data = Car196_object(root=self._path['root'],train=False,test=False, transform=test_transform) #test-image
+        train_data = Data_object(root=self._path['root'],train=True,transform=train_transform)      #train-bbox,train-image
+        test_data = Data_object(root=self._path['root'],train=False,test=True, transform=test_transform)   #test-bbox
+        test_image_data = Data_object(root=self._path['root'],train=False,test=False, transform=test_transform) #test-image
         self._train_loader = DataLoader(train_data,batch_size=self._options['batch_size'],
                                         shuffle=True,num_workers=4,pin_memory=True)
         self._test_loader = DataLoader(test_data, batch_size=self._options['batch_size'],
@@ -282,12 +283,13 @@ def show_params(params, paths):
     print('| model path: {}'.format(paths['model']))
     print('|-----------------------------------------------------')
 
-def filter_net_fine_tune():
+def filter_net_fine_tune(dataset):
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root, 'CUB200')
+    root = os.path.join(root, dataset)
     config = yaml.load(open(os.path.join(root, 'config.yaml'), 'r'))
     config['weight_decay'] = float(config['weight_decay'])
     config['base_lr'] = float(config['base_lr'])
+    config['classnum'] = int(config['classnum'])
     # config['batch_size'] = 4
     path = {
         # 'cub200': os.path.join(root, 'data/cub200'),
@@ -306,6 +308,10 @@ def filter_net_fine_tune():
 
 if __name__ == '__main__':
     start = time.time()
-    filter_net_fine_tune()
+    parser = argparse.ArgumentParser(description='manual to this script')
+    parser.add_argument('--dataset', type=str, default='CUB200')
+    args = parser.parse_args()
+    dataset = args.dataset
+    filter_net_fine_tune(dataset)
     end = time.time()
     print('~~~~~~~~~~~Runtime: {}~~~~~~~~~~~'.format(end - start))

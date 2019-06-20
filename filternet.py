@@ -20,6 +20,8 @@ import yaml
 import numpy as np
 from PIL import Image
 from apex import amp
+import argparse
+
 
 #os.environ["CUDA_VISIBLE_DEVICES"]="0"
 torch.manual_seed(0)
@@ -42,7 +44,7 @@ class FilterNet(torch.nn.Module):
     ->  fc(4096)     -> relu -> dropout      -> fc(4096)             -> relu -> dropout
     ->  fc(200)
     """
-    def __init__(self, pretrained=True):
+    def __init__(self, pretrained=True, classnum = 200):
         """
         Declare all layers needed
         """
@@ -52,11 +54,12 @@ class FilterNet(torch.nn.Module):
        #     if classname.find('Conv') != -1:
        #         m.bias = None
         self._pretrained = pretrained
+        self._classnum = classnum
         basis_vgg19 = torchvision.models.vgg19(pretrained=self._pretrained)
        # basis_vgg19.apply(weights_init)
         self.features = basis_vgg19.features
         self.classifier = torch.nn.Sequential(*list(basis_vgg19.classifier.children())[:-1])
-        self.fc = torch.nn.Linear(in_features=4096, out_features=195)
+        self.fc = torch.nn.Linear(in_features=4096, out_features=self._classnum)
 
     def forward(self, x):
         """
@@ -73,7 +76,7 @@ class FilterNet(torch.nn.Module):
         x = self.classifier(x)
         assert x.size() == (N, 4096), 'Wrong vgg19 classifier output'
         x = self.fc(x)
-        assert x.size() == (N, 195), 'Wrong fc output'
+        assert x.size() == (N, self._classnum), 'Wrong fc output'
         return x
 
 
@@ -91,7 +94,7 @@ class FilterNetManager(object):
         self._options = options
         self._path = path
         # Network
-        net = FilterNet()
+        net = FilterNet(self._options['classnum'])
         # torch.cuda.set_device(0)
         self._net = net.cuda()
         # if torch.cuda.device_count() > 1:
@@ -236,14 +239,14 @@ def show_params(params, paths):
     print('|-----------------------------------------------------')
 
 
-def filter_net_fine_tune():
+def filter_net_fine_tune(dataset):
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root, 'CUB200')
+    root = os.path.join(root, dataset)
 
     config = yaml.load(open(os.path.join(root,'config.yaml'), 'r'))
     config['weight_decay'] = float(config['weight_decay'])
     config['base_lr'] = float(config['base_lr'])
-
+    config['classnum'] = int(config['classnum'])
 
     path = {
         # 'cub200': os.path.join(root, 'data/cub200'),
@@ -255,7 +258,7 @@ def filter_net_fine_tune():
     if not os.path.exists(path['model']):
         os.mkdir(path['model'])
         print(' Creating model dir ...')
-
+    
     show_params(config, path)
     manager = FilterNetManager(config, path)
     manager.train()
@@ -263,6 +266,10 @@ def filter_net_fine_tune():
 
 if __name__ == '__main__':
     start = time.time()
-    filter_net_fine_tune()
+    parser = argparse.ArgumentParser(description='manual to this script')
+    parser.add_argument('--dataset', type=str, default='CUB200')
+    args = parser.parse_args()
+    dataset = args.dataset
+    filter_net_fine_tune(dataset)
     end = time.time()
     print('~~~~~~~~~~~Runtime: {}~~~~~~~~~~~'.format(end - start))

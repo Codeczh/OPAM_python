@@ -7,6 +7,8 @@ import time
 import selectivesearch
 import math
 import multiprocessing
+import argparse
+
 
 def patch_generator(image):
     """
@@ -55,7 +57,8 @@ def region_proposal(path,id):
     image_path = os.path.join(path['root'], 'images/')
     train_num = 0
     id_2_train = np.genfromtxt(os.path.join(path['root'], 'train.list'), dtype=str)
-    for idx in range(1000*id,min(1000*(id+1), id_2_train.shape[0])) :
+    step = math.floor((id_2_train.shape[0]-1)/8)
+    for idx in range(step*id,min(step*(id+1), id_2_train.shape[0])) :
         image = Image.open(os.path.join(image_path, id_2_train[idx, 0]))
         if image.mode == 'L':
             image = image.convert('RGB')
@@ -79,7 +82,8 @@ def region_proposal(path,id):
     #     f.writelines(regionList)
     test_num = 0
     id_2_test = np.genfromtxt(os.path.join(path['root'], 'test.list'), dtype=str)
-    for idx in range(1000*id,min(1000*(id+1), id_2_test.shape[0])):
+    step = math.floor((id_2_test.shape[0]-1)/8)
+    for idx in range(step*id,min(step*(id+1), id_2_test.shape[0])):
         image = Image.open(os.path.join(image_path, id_2_test[idx, 0]))
         if image.mode == 'L':
             image = image.convert('RGB')
@@ -93,10 +97,10 @@ def region_proposal(path,id):
               format(id_2_test[idx, 0][0:6], id_2_test.shape[0], len(regionList)))
         test_num += len(regionList)
     print('-------------train number:{}   test number:{}--------------'.format(train_num,test_num))
-def thread(id):
+def thread(id,dataset):
     print('start {}-----'.format(id))
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root, 'CUB200')
+    root = os.path.join(root, dataset)
     config = yaml.load(open(root + '/config.yaml', 'r'))
     path = {
         'root': root
@@ -113,15 +117,19 @@ def thread(id):
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~{} Runtime: {}~~~~~~~~~~~~~~~~~~~~~~~~~~'.format(id,end - start))
 
 if __name__ == '__main__':
-    p0 = multiprocessing.Process(target=thread, args=(0,))
-    p1 = multiprocessing.Process(target=thread, args=(1,))
-    p2 = multiprocessing.Process(target=thread, args=(2,))
-    p3 = multiprocessing.Process(target=thread, args=(3,))
-    p4 = multiprocessing.Process(target=thread, args=(4,))
-    p5 = multiprocessing.Process(target=thread, args=(5,))
-    p6 = multiprocessing.Process(target=thread, args=(6,))
-    p7 = multiprocessing.Process(target=thread, args=(7,))
-    p8 = multiprocessing.Process(target=thread, args=(8,))
+    parser = argparse.ArgumentParser(description='manual to this script')
+    parser.add_argument('--dataset', type=str, default='CUB200')
+    args = parser.parse_args()
+    dataset = args.dataset
+    p0 = multiprocessing.Process(target=thread, args=(0,dataset))
+    p1 = multiprocessing.Process(target=thread, args=(1,dataset))
+    p2 = multiprocessing.Process(target=thread, args=(2,dataset))
+    p3 = multiprocessing.Process(target=thread, args=(3,dataset))
+    p4 = multiprocessing.Process(target=thread, args=(4,dataset))
+    p5 = multiprocessing.Process(target=thread, args=(5,dataset))
+    p6 = multiprocessing.Process(target=thread, args=(6,dataset))
+    p7 = multiprocessing.Process(target=thread, args=(7,dataset))
+    p8 = multiprocessing.Process(target=thread, args=(8,dataset))
     p0.start()
     p1.start()
     p2.start()

@@ -12,12 +12,13 @@ import os
 import time
 import torch
 import torchvision
-from Car_dataset import Car196
+from dataset import Data
 from torch.utils.data import DataLoader
 #from filternet_bn_rerun import FilterNet
 import yaml
 import torch.nn.functional as F
 from apex import amp
+import argparse
 
 
 torch.manual_seed(0)
@@ -37,12 +38,13 @@ class SaliencyNet(torch.nn.Module):
         conv(size=(3,3), stride=1, pad=1, output=1024) -> relu -> global average pooling -> dropout -> 200 way fc
     The network input image of size (3 * 224 * 224)
     """
-    def __init__(self, pretrained=True):
+    def __init__(self, pretrained=True, classnum = 200):
         """
         Declare all layers needed
         """
         super().__init__()
         self._pretrained = pretrained
+        self._classnum = classnum
         self.features = torchvision.models.vgg16(pretrained=self._pretrained).features
         # Remove the layers after conv5_3 (including a relu and a pool5), output of self.features will be 14 * 14
         self.features = torch.nn.Sequential(*list(self.features.children())[:-4])
@@ -51,7 +53,7 @@ class SaliencyNet(torch.nn.Module):
         self.relu = torch.nn.ReLU(inplace=True)
         self.gap = torch.nn.AdaptiveAvgPool2d((1, 1))
         self.dropout = torch.nn.Dropout(p=0.5)
-        self.fc = torch.nn.Linear(in_features=1024, out_features=195)
+        self.fc = torch.nn.Linear(in_features=1024, out_features= self._classnum)
         # self.fc=F.softmax()
 
     def forward(self, x):
@@ -73,7 +75,7 @@ class SaliencyNet(torch.nn.Module):
         assert x.size() == (N, 1024), 'Wrong global average pooling output'
         x = self.dropout(x)
         x = self.fc(x)
-        assert x.size() == (N, 195), 'Wrong fc output'
+        assert x.size() == (N, self._classnum), 'Wrong fc output'
         return x
 
 
@@ -95,7 +97,7 @@ class SaliencyNetManager(object):
         #     net = SaliencyNet()
         # else:
         #     net = SaliencyNet(pretrained=False)
-        net = SaliencyNet()
+        net = SaliencyNet(self._options['classnum'])
         #torch.cuda.set_device(0)
         self._net = net.cuda()
         # if torch.cuda.device_count() > 1:
@@ -134,8 +136,8 @@ class SaliencyNetManager(object):
         ])
 
         # data
-        train_data = Car196(root=self._path['root'], train=True, transform=train_transform)
-        test_data = Car196(root=self._path['root'], train=False, transform=test_transform)
+        train_data = Data(root=self._path['root'], train=True, transform=train_transform)
+        test_data = Data(root=self._path['root'], train=False, transform=test_transform)
         self._train_loader = DataLoader(train_data, batch_size=self._options['batch_size'],
                                         shuffle=True, num_workers=4, pin_memory=True)
         self._test_loader = DataLoader(test_data, batch_size=16,
@@ -187,7 +189,7 @@ class SaliencyNetManager(object):
                 best_epoch = t + 1
                 print('*', end='')
                 torch.save(self._net.state_dict(), os.path.join(self._path['model'],
-                                                                'saliencynet_vgg16_best_epoch.pth'))
+                                                                self._path['save_model']))
             print("%d\t\t%4.3f\t\t%4.2f%%\t\t\t%4.2f%%\t\t\t%4.2f" % (t + 1, sum(epoch_loss) / len(epoch_loss),
                                                                       train_accuracy, test_accuracy,
                                                                       epoch_end_time - epoch_start_time))
@@ -238,17 +240,18 @@ def show_params(params, paths):
     print('|-----------------------------------------------------')
 
 
-def saliency_net_fine_tune():
+def saliency_net_fine_tune(dataset):
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root, 'CUB200')
+    root = os.path.join(root, dataset)
     config = yaml.load(open(os.path.join(root, 'config.yaml'), 'r'))
     config['weight_decay'] = float(config['weight_decay'])
     config['base_lr'] = 0.1*float(config['base_lr'])
-
+    config['classnum'] = int(config['classnum'])
     path = {
         # 'cub200': os.path.join(root, 'data/cub200'),
         'model': os.path.join(root, 'model'),
-        'root': root
+        'root': root,
+        'save_model':'saliencynet_vgg16_best_epoch.pth'
     }
 
 
@@ -262,6 +265,10 @@ def saliency_net_fine_tune():
 
 if __name__ == '__main__':
     start = time.time()
-    saliency_net_fine_tune()
+    parser = argparse.ArgumentParser(description='manual to this script')
+    parser.add_argument('--dataset', type=str, default='CUB200')
+    args = parser.parse_args()
+    dataset = args.dataset
+    saliency_net_fine_tune(dataset)
     end = time.time()
     print('~~~~~~~~~~~Runtime: {}~~~~~~~~~~~'.format(end - start))

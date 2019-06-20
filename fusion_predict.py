@@ -9,14 +9,14 @@ from torch.utils.data import DataLoader
 import yaml
 import numpy as np
 from PIL import Image
-from patchnet_bn_rerun import FilterNet
+from patchnet_bn_rerun import PatchNet
 import operator
 
 #os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
 
-class Car196_test(torch.utils.data.Dataset):
+class Data_test(torch.utils.data.Dataset):
     '''
     Arguments:
         _root               [str]                   root directory of the dataset
@@ -210,7 +210,8 @@ class Car196_test(torch.utils.data.Dataset):
 
 
 class FusionPredict(object):
-    def __init__(self, data_model_path):
+    def __init__(self, options, data_model_path):
+        self._options = options
         self._path = data_model_path
         self._test_transform = torchvision.transforms.Compose([
             torchvision.transforms.ToPILImage(),
@@ -219,7 +220,7 @@ class FusionPredict(object):
             torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         # Network
-        net = FilterNet(pretrained=False)
+        net = FilterNet(pretrained=False,classnum = self._options['classnum'])
         # torch.cuda.set_device(1)
         # self._net = net.cuda()
         # if torch.cuda.device_count() > 1:
@@ -235,16 +236,16 @@ class FusionPredict(object):
         self._partnet_score_dict = {}
         # Coefficients for each score
         # load test image
-        test_image_data = Car196_test(root=self._path['root'], train=False, test='image', transform=self._test_transform,
+        test_image_data = Data_test(root=self._path['root'], train=False, test='image', transform=self._test_transform,
                                       get_img_id=True)
         self._image_dataloader = DataLoader(test_image_data, batch_size=64, shuffle=False, num_workers=4, pin_memory=True)
         # load test bbox
-        test_bbox_data = Car196_test(root=self._path['root'], train=False, test='bbox', transform=self._test_transform, get_img_id=True)
+        test_bbox_data = Data_test(root=self._path['root'], train=False, test='bbox', transform=self._test_transform, get_img_id=True)
         self._bbox_dataloader = DataLoader(test_bbox_data, batch_size=64, shuffle=False, num_workers=4, pin_memory=True)
         # load test part
-        test_part1_data = Car196_test(root=self._path['root'], train=False, test='part1', transform=self._test_transform,
+        test_part1_data = Data_test(root=self._path['root'], train=False, test='part1', transform=self._test_transform,
                                       get_img_id=True)
-        test_part2_data = Car196_test(root=self._path['root'], train=False, test='part2', transform=self._test_transform,
+        test_part2_data = Data_test(root=self._path['root'], train=False, test='part2', transform=self._test_transform,
                                       get_img_id=True)
         self._part1_dataloader1 = DataLoader(test_part1_data, batch_size=64, shuffle=False, num_workers=4, pin_memory=True)
         self._part2_dataloader2 = DataLoader(test_part2_data, batch_size=64, shuffle=False, num_workers=4, pin_memory=True)
@@ -416,10 +417,14 @@ class FusionPredict(object):
         for i in range(len(x)):
             print(x[len(x)-1-i])
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='manual to this script')
+    parser.add_argument('--dataset', type=str, default='CUB200')
+    args = parser.parse_args()
+    dataset = args.dataset
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root,'CUB200')
+    root = os.path.join(root, dataset)
     config = yaml.load(open(root+'/config.yaml', 'r'))
-
+    config['classnum'] = int(config['classnum'])
     path = {
         'root': root,
         # 'patchnet_vgg19bn_model': os.path.join(root, config['patchnet_vgg19bn_model']),
@@ -433,7 +438,7 @@ if __name__ == '__main__':
     }
     start = time.time()
 
-    fusionPredictor = FusionPredict(path)
+    fusionPredictor = FusionPredict(config, path)
 
     fusionPredictor.predict()
 

@@ -11,8 +11,10 @@ from PIL import Image
 from sklearn.cluster import SpectralClustering
 from sklearn.cluster import KMeans
 # from sklearn.cluster import SpectralClustering
-from patchnet import FilterNet
+from patchnet_bn_rerun import PatchNet
 from torch.utils.data import Dataset, DataLoader
+import argparse
+
 
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
@@ -144,17 +146,18 @@ class Part(Dataset):
 
 
 class PartAligner(object):
-    def __init__(self,data_root,path):
+    def __init__(self, options ,path):
         super().__init__()
+        self._options = options
         self._path = path
-        net = FilterNet()
+        net = PatchNet(classnum = self._options['classnum'])
         net = net.cuda()
         net.load_state_dict(torch.load(os.path.join(self._path['model'],self._path['load_model'])))
         #  ,map_location={'cuda:0': 'cuda:0'}
         self._net = net
         self.conv_feature_blobs = []
-        self._data_path = os.path.expanduser(data_root)
-        self._partpath= os.path.join(self._data_path, 'parts_align_9')
+
+        self._partpath= os.path.join(self._path['root'], 'parts_align_9')
         if not os.path.exists(self._partpath):
             os.mkdir(self._partpath)
             print('Creating {}'.format(self._partpath))
@@ -167,7 +170,7 @@ class PartAligner(object):
         # print(type(net.features[46].weight))
         #print(net.features[46].bias)
         #print(net)
-        Neuron_dir = os.path.join(self._data_path,'Neuron_9')
+        Neuron_dir = os.path.join(self._path['root'],'Neuron_9')
         if not os.path.exists(Neuron_dir):
             os.mkdir(Neuron_dir)
             print('Creating {}'.format(Neuron_dir))
@@ -219,9 +222,9 @@ class PartAligner(object):
         phases = [ 'train','test']#
         for phase in phases:
             if phase == 'train':
-                part_dataset = Part(data_root=self._data_path, transform=train_transform, train=True)
+                part_dataset = Part(data_root=self._path['root'], transform=train_transform, train=True)
             else:
-                part_dataset = Part(data_root=self._data_path, transform=test_transform, train=False)
+                part_dataset = Part(data_root=self._path['root'], transform=test_transform, train=False)
                 print(part_dataset.__len__())
             part_dataloader = DataLoader(part_dataset, batch_size=64, shuffle=False, num_workers=4, pin_memory=True)
             self._part0 = {}
@@ -251,8 +254,8 @@ class PartAligner(object):
 
                     for i in range(0, N, 2):
                         assert imgID[i] == imgID[i + 1]
-                        img0 = Image.open(os.path.join(self._data_path,'parts_9', imgID[i] + '_1.jpg'))
-                        img1 = Image.open(os.path.join(self._data_path,'parts_9', imgID[i] + '_2.jpg'))
+                        img0 = Image.open(os.path.join(self._path['root'],'parts_9', imgID[i] + '_1.jpg'))
+                        img1 = Image.open(os.path.join(self._path['root'],'parts_9', imgID[i] + '_2.jpg'))
                         score_f0_n0, score_f0_n1, score_f1_n0, score_f1_n1 = 0, 0, 0, 0
                         part_0_activation = feature[i]  # .cpu().numpy()  # shape of (512, 1, 1)
                         part_1_activation = feature[i + 1]
@@ -368,27 +371,26 @@ class PartAligner(object):
 
 
 if __name__ == '__main__':
-    root = os.popen('pwd').read().strip()
-    root = os.path.join(root,'CUB200')
-    config = yaml.load(open(os.path.join(root,'config.yaml'), 'r'))
+    parser = argparse.ArgumentParser(description='manual to this script')
+    parser.add_argument('--dataset', type=str, default='CUB200')
+    args = parser.parse_args()
+    dataset = args.dataset
 
+    root = os.popen('pwd').read().strip()
+    root = os.path.join(root,dataset)
+    config = yaml.load(open(os.path.join(root,'config.yaml'), 'r'))
+    config['classnum'] = int (config['classnum'])
     path = {
         #'cub200': os.path.join(root, 'data/cub200'),
         'root':root,
         'model': os.path.join(root, 'model'),
         'load_model': 'patchnet_vgg19bn_rerun_best_epoch.pth'
     }
-    #data_root = '/home/czh/PycharmProjects/TIP/TIP/'
-    data_root = root
-    # for k in path:
-    #     if k is 'model':
-    #         assert os.path.isfile(path[k])
-    #     else:
-    #         assert os.path.isdir(path[k])
+   
     print(' Datetime : {}'.format(datetime.datetime.now()))
     print('>>>--->>>\nUsing model:\n\t{} \n>>>--->>>'.format(path['load_model']))
     start = time.time()
-    part_aligner = PartAligner(data_root,path)
+    part_aligner = PartAligner(config,path)
     part_aligner.align_part()
     end = time.time()
     print('~~~~~~~~~~~Runtime: {}~~~~~~~~~~~'.format(end - start))

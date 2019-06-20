@@ -240,11 +240,11 @@ def filtering_2_TIP(boxes, gt, imgsize, saliency, beta):
     parts[1,:] = ft_boxes[max(1, int(scores[location, 1]))]
     return truth,parts
 
-def filter_out_2_TIP(threadID,phase):
+def filter_out_2_TIP(threadID,phase,dataset):
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~config
 
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root, 'CUB200')
+    root = os.path.join(root, dataset)
 
     count = 0
     boxes_num = 1000
@@ -313,15 +313,17 @@ def filter_out_2_TIP(threadID,phase):
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description='manual to this script')
     parser.add_argument('--threadid', type=int, default=3)
+    parser.add_argument('--dataset',type =str, default = 'CUB200')
     args = parser.parse_args()
     thread = args.threadid
+    dataset = args.dataset
     for phase in ['train','test']:
         start = time.time()
-        filter_out_2_TIP(thread,phase)
+        filter_out_2_TIP(thread,phase,dataset)
         end = time.time()
         print('~~~~~~~~~~~Runtime: {}~~~~~~~~~~~'.format(end - start))
 
     ####commond
     # cd TIP/TIP
     # conda activate lijiang
-    # python filterpart.py --threadid 0
+    # python filterpart.py --threadid 0 --dataset CUB200

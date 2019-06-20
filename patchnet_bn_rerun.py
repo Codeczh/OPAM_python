@@ -22,6 +22,7 @@ import numpy as np
 from PIL import Image
 import math
 from apex import amp
+import argparse
 
 #NVIDIA = 3   #set GPU device
 torch.manual_seed(0)
@@ -29,7 +30,7 @@ torch.cuda.manual_seed(0)
 #os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 
-class Car196(torch.utils.data.Dataset):
+class Data(torch.utils.data.Dataset):
     """
     Arguments:
         _root                [str]                   root directory of the dataset
@@ -173,7 +174,7 @@ class Car196(torch.utils.data.Dataset):
 
 
 
-class FilterNet(torch.nn.Module):
+class PatchNet(torch.nn.Module):
     """
     Per the original paper, FilterNet, which is used to remove the noisy patches and select relevant patches,
     is first pre-trained on the ImageNet and then fine-tuned on the training data
@@ -188,7 +189,7 @@ class FilterNet(torch.nn.Module):
     ->  fc(4096)     -> relu -> dropout      -> fc(4096)             -> relu -> dropout
     ->  fc(200)
     """
-    def __init__(self, pretrained=True):
+    def __init__(self, pretrained=True, classnum = 200):
         """
         Declare all layers needed
         """
@@ -197,13 +198,13 @@ class FilterNet(torch.nn.Module):
             classname = m.__class__.__name__
             if classname.find('Conv') != -1:
                  m.bias = None
-
+        self._classnum = classnum
         self._pretrained = pretrained
         basis_vgg19 = torchvision.models.vgg19_bn(pretrained=self._pretrained)
         basis_vgg19.apply(weights_init)
         self.features = basis_vgg19.features
         self.classifier = torch.nn.Sequential(*list(basis_vgg19.classifier.children())[:-1])
-        self.fc = torch.nn.Linear(in_features=4096, out_features=195)
+        self.fc = torch.nn.Linear(in_features=4096, out_features= self._classnum)
 
     def forward(self, x):
         """
@@ -220,11 +221,11 @@ class FilterNet(torch.nn.Module):
         x = self.classifier(x)
         assert x.size() == (N, 4096), 'Wrong vgg19 classifier output'
         x = self.fc(x)
-        assert x.size() == (N, 195), 'Wrong fc output'
+        assert x.size() == (N, self._classnum), 'Wrong fc output'
         return x
 
 
-class FilterNetManager(object):
+class PatchNetManager(object):
     def __init__(self, options, path):
         """
         Prepare the network, criterion, Optimizer and data
@@ -238,7 +239,7 @@ class FilterNetManager(object):
         self._options = options
         self._path = path
         # Network
-        net = FilterNet()
+        net = PatchNet(classnum = self._options['classnum'])
         #torch.cuda.set_device(NVIDIA)
         self._net = net.cuda()
         # if torch.cuda.device_count() > 1:
@@ -277,8 +278,8 @@ class FilterNetManager(object):
         ])
 
         # data
-        train_data = Car196(root=self._path['root'], train=True, transform=train_transform)
-        test_data = Car196(root=self._path['root'], train=False, transform=test_transform)
+        train_data = Data(root=self._path['root'], train=True, transform=train_transform)
+        test_data = Data(root=self._path['root'], train=False, transform=test_transform)
         self._train_loader = DataLoader(train_data, batch_size=self._options['batch_size'],
                                         shuffle=True, num_workers=4, pin_memory=True)
         self._test_loader = DataLoader(test_data, batch_size=32,
@@ -414,12 +415,13 @@ def show_params(params, paths):
     print('|-----------------------------------------------------')
 
 
-def filter_net_fine_tune():
+def filter_net_fine_tune(dataset):
     root = os.popen('pwd').read().strip()
-    root = os.path.join(root, 'CUB200')
+    root = os.path.join(root, dataset)
     config = yaml.load(open(os.path.join(root, 'config.yaml'), 'r'))
     config['weight_decay'] = float(config['weight_decay'])
     config['base_lr'] = float(config['base_lr'])
+    config['classnum'] = int(config['classnum'])
     #config['batch_size'] = 4
     path = {
         # 'cub200': os.path.join(root, 'data/cub200'),
@@ -432,12 +434,16 @@ def filter_net_fine_tune():
     #     assert os.path.isdir(path[d])
 
     show_params(config, path)
-    manager = FilterNetManager(config, path)
+    manager = PatchNetManager(config, path)
     manager.train()
     #manager.test1()
 
 if __name__ == '__main__':
     start = time.time()
-    filter_net_fine_tune()
+    parser = argparse.ArgumentParser(description='manual to this script')
+    parser.add_argument('--dataset', type=str, default='CUB200')
+    args = parser.parse_args()
+    dataset = args.dataset
+    filter_net_fine_tune(dataset)
     end = time.time()
     print('~~~~~~~~~~~Runtime: {}~~~~~~~~~~~'.format(end - start))
