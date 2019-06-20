@@ -13,11 +13,5 @@ scikit-learn==0.20.2
 scipy==1.2.0
 six==1.12.0
 sklearn==0.0
-torch==1.0.0
-torchvision==0.2.1
 selectivesearch
-multiprocessing
-apex   {	git clone https://github.com/NVIDIA/apex
-		cd apex
-		pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" .
-       }
+

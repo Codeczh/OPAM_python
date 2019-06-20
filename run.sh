@@ -11,6 +11,11 @@
 #| bash run.sh fusion    - fine-tune classnet & objectnet & prediction                                     |
 #| bash run.sh all      - run step 1,2,3,4                                                                 |
 #|---------------------------------------------------------------------------------------------------------|
+#multiprocessing
+#apex   {	git clone https://github.com/NVIDIA/apex
+#		cd apex
+#		pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" .
+#       }
 
 export CUDA_VISIBLE_DEVICES=2
 
