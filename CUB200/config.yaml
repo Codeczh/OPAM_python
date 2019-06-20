@@ -1,6 +1,6 @@
 classnum: 200
 base_lr: 1e-2
-batch_size: 10
+batch_size: 80
 epochs: 60
 weight_decay: 1e-5
 saliencynet_model: model/saliencynet_vgg16_best_epoch.pth
