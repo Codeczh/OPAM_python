@@ -9,8 +9,8 @@ While if you want CUB200 dataset, download `CUB200/images` from here:
   or use `CUB200/split_train_test.py` to process your original
    [CUB_200_2011](www.vision.caltech.edu/visipedia-data/CUB-200-2011/CUB_200_2011.tgz) and generate these images.  
 
-**Note:**   
-If you want your own dataset, remember to edit your `config.yaml` and change *classnum: xxx*.     
+**Note:** If you want your own dataset, remember to edit your `config.yaml` and change *classnum: xxx*.    
+
 ----------------------------------------
 ### Environment:  
 Install the environment as the 'requirements.txt'.
