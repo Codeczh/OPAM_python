@@ -11,6 +11,7 @@ import numpy as np
 from PIL import Image
 from patchnet_bn_rerun import PatchNet
 import operator
+import argparse
 
 #os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 torch.manual_seed(0)
@@ -220,7 +221,7 @@ class FusionPredict(object):
             torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         # Network
-        net = FilterNet(pretrained=False,classnum = self._options['classnum'])
+        net = PatchNet(pretrained=False,classnum = self._options['classnum'])
         # torch.cuda.set_device(1)
         # self._net = net.cuda()
         # if torch.cuda.device_count() > 1:

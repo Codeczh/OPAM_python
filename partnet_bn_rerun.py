@@ -384,6 +384,7 @@ def filter_net_fine_tune(dataset):
     config['weight_decay'] = float(config['weight_decay'])
     config['base_lr'] = float(config['base_lr'])
     config['classnum'] = int(config['classnum'])
+    config['batch_size'] = 64
 
     path = {
         # 'cub200': os.path.join(root, 'data/cub200'),

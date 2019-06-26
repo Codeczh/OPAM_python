@@ -247,9 +247,9 @@ def filter_out_2_TIP(threadID,phase,dataset):
     root = os.path.join(root, dataset)
 
     count = 0
-    boxes_num = 1000
+    #boxes_num = 1000
     im_size = np.zeros((1,2))
-    boxes = np.zeros((boxes_num, 4))
+    #boxes = np.zeros((boxes_num, 4))
     beta = 1
     outdir = root+'/parts_9/'
     image_path = root+'/images/'
@@ -270,28 +270,30 @@ def filter_out_2_TIP(threadID,phase,dataset):
     # filename = 0
     boxes = []
     id_2_name = np.genfromtxt(os.path.join(root,phase+'.list'), dtype=str)
+    step = math.floor((id_2_name.shape[0] - 1) / 8)
     for i in range(len(gt_bbox)):
-        idx = id_2_name[threadID*1000+i,0][0:6]
+        idx = id_2_name[threadID*step+i,0][0:6]
         content = np.genfromtxt(os.path.join(root,'ss_patch_9process',idx+'.list'))
         # 0 378 1023 389    x  y   w   h -> x1,y1,x2,y2
+        #select part from min(len, 1000)
         for j in range(min(len(content),1000)):
             boxes.append([int(content[j][0]),int(content[j][1]),
                           int(content[j][0])+int(content[j][2]),
                           int(content[j][1])+int(content[j][3])])
         sal = Image.open(os.path.join(heatdir,idx+'.png'))
-        saliency = np.array(sal)
+        saliency = np.array(sal).astype(np.float64)
         # w,h
         im_size[0,0] = saliency.shape[1] #768.1024
         im_size[0,1] = saliency.shape[0]
         #  bbox.append(str(x) + ' ' + str(y) + ' ' + str(width) + ' ' + str(height) + ' ' + '\n')
         x,y,w,h = map(int,gt_bbox[i].strip().split())
         gt = [x,y,x+w,y+h]
-        print('# phase {} number----{}   #image----{}.jpg start... '.format(phase,threadID*1000+i+1, idx) ,end='')
+        print('# phase {} number----{}   #image----{}.jpg start... '.format(phase,threadID*step+i+1, idx) ,end='')
 
         [truth, parts] = filtering_2_TIP(boxes, gt, im_size, saliency, beta)
         count = count + truth
         # ~~~~~~~~~~~~~part,bbox~~~~~~~~~~~~
-        img = Image.open(os.path.join(image_path, id_2_name[threadID*1000+i,0]))
+        img = Image.open(os.path.join(image_path, id_2_name[threadID*step+i,0]))
         # part1
         img_part1 = img.crop(parts[0])
         img_part1.save(os.path.join(outdir, idx+ '_1.jpg'))

@@ -1,7 +1,7 @@
 import os
 import torch
 import torchvision
-from filternet_bn_rerun import FilterNet
+from filternet import FilterNet
 from torch.utils import data
 import yaml
 import time
@@ -177,7 +177,7 @@ class PatchFilter(object):
         self._options = options
         self._path = path
         # Net
-        net = FilterNet(pretrained=False,self._options['classnum'])
+        net = FilterNet(pretrained=False,classnum = self._options['classnum'])
         self._net = net.cuda()
         self._net.load_state_dict(torch.load(self._path['load_model'],map_location={'cuda:2':'cuda:0'}))  # filternet_vgg19_best_epoch.pth
         #, map_location={'cuda:2': 'cuda:0'}

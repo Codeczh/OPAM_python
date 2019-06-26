@@ -7,7 +7,7 @@ from PIL import Image
 
 
 
-class Car196(torch.utils.data.Dataset):
+class Data(torch.utils.data.Dataset):
     """
     Arguments:
         _root                [str]                   root directory of the dataset

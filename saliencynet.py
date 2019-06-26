@@ -255,8 +255,8 @@ def saliency_net_fine_tune(dataset):
     }
 
 
-    for d in path:
-        assert os.path.isdir(path[d])
+    # for d in path:
+    #     assert os.path.isdir(path[d])
 
     show_params(config, path)
     finetune_manager = SaliencyNetManager(config, path)

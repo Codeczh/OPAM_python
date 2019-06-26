@@ -11,13 +11,8 @@
 #| bash run.sh fusion    - fine-tune classnet & objectnet & prediction                                     |
 #| bash run.sh all      - run step 1,2,3,4                                                                 |
 #|---------------------------------------------------------------------------------------------------------|
-#multiprocessing
-#apex   {	git clone https://github.com/NVIDIA/apex
-#		cd apex
-#		pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" .
-#       }
 
-export CUDA_VISIBLE_DEVICES=2
+export CUDA_VISIBLE_DEVICES=1
 
 echo "What is your dataset?"
 select dataset in "CUB200" "CAR196";do
@@ -52,7 +47,7 @@ if [ "$1" == "patch" ] || [ "$1" == "all" ];then
     # train patches and generate patchnet_vgg19bn_rerun_best_epoch.pth
 fi
 
-if ["$1" == "object" ] || [ "$1" == "all" ];then
+if [ "$1" == "object" ] || [ "$1" == "all" ];then
     echo "Start saliencynet ... "
     python saliencynet.py --dataset ${dataset} > ${dataset}/log/saliencynet.log
     #generate saliencynet_vgg16_best_epoch.pth
@@ -61,11 +56,13 @@ if ["$1" == "object" ] || [ "$1" == "all" ];then
     python CAM.py --threadid 1 --dataset ${dataset} > ${dataset}/log/CAM1.log &
     python CAM.py --threadid 2 --dataset ${dataset} > ${dataset}/log/CAM2.log &
     python CAM.py --threadid 3 --dataset ${dataset} > ${dataset}/log/CAM3.log &
+    wait
     python CAM.py --threadid 4 --dataset ${dataset} > ${dataset}/log/CAM4.log &
-    wait    #  if not enough GPU memory
+    #wait    #  if not enough GPU memory
     python CAM.py --threadid 5 --dataset ${dataset} > ${dataset}/log/CAM5.log &
     python CAM.py --threadid 6 --dataset ${dataset} > ${dataset}/log/CAM6.log &
     python CAM.py --threadid 7 --dataset ${dataset} > ${dataset}/log/CAM7.log &
+    wait
     python CAM.py --threadid 8 --dataset ${dataset} > ${dataset}/log/CAM8.log &
     # generate bbox/000001.png , heatmap_read/000001.png  and datalist/1000.list
     # generate showbbox/000001.png and heatmap_watch/000001.png
@@ -75,7 +72,7 @@ if ["$1" == "object" ] || [ "$1" == "all" ];then
     # train objects and generate objectnet_vgg19bn_rerun_best_epoch.pth
 fi
 
-if ["$1" == "part" ] || [ "$1" == "all" ];then
+if [ "$1" == "part" ] || [ "$1" == "all" ];then
     echo "Start filter part ... "
     python filterpart.py --threadid 0 --dataset ${dataset} > ${dataset}/log/filterpart0.log &
     python filterpart.py --threadid 1 --dataset ${dataset} > ${dataset}/log/filterpart1.log &
@@ -96,10 +93,10 @@ if ["$1" == "part" ] || [ "$1" == "all" ];then
     # train parts and generate partnet_vgg19bn_rerun_best_epoch.pth
 fi
 
-if ["$1" == "fusion" ] || [ "$1" == "all" ];then
+if [ "$1" == "fusion" ] || [ "$1" == "all" ];then
     echo "Start fusion predict ..." 
     python fusion_predict.py --dataset ${dataset} > ${dataset}/log/fusion_predict.log
-    
+fi
 
 
 

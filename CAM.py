@@ -185,7 +185,7 @@ class ObjectExtractor(object):
             self._net = net.cuda()
         else:
             raise EnvironmentError('This is designed to run on GPU but no GPU is found')
-        state_dict = torch.load(self._path['load_model'])
+        state_dict = torch.load(os.path.join(self._path['root'],'model',self._path['load_model']))
         # new_state_dict=OrderedDict()
         # for k,v in state_dict.items():
         #     name = k[7:]
@@ -442,7 +442,7 @@ if __name__ == '__main__':
     }
     for k in path:
         if k is 'load_model':
-            assert os.path.isfile(path[k])
+            assert os.path.isfile(root+'/model/'+path[k])
         else:
             assert os.path.isdir(path[k])
     print('>>>--->>>\nUsing model:\n\t{} \n>>>--->>>'.format(path['load_model']))
