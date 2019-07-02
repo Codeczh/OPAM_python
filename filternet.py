@@ -13,7 +13,7 @@ step 2 (patch_filter.py):
 import os
 import torch
 import torchvision
-from Car_dataset import Car196
+from dataset import Data
 import time
 from torch.utils.data import DataLoader
 import yaml
@@ -135,8 +135,8 @@ class FilterNetManager(object):
         # data
         #train_data = Car196(root="/home/czh/Downloads/OPAM_TIP2018-master", train=True, transform=train_transform)
         #test_data = Car196(root="/home/czh/Downloads/OPAM_TIP2018-master", train=False, transform=test_transform)
-        train_data = Car196(root=self._path['root'], train=True, transform=train_transform)
-        test_data = Car196(root=self._path['root'], train=False, transform=test_transform)
+        train_data = Data(root=self._path['root'], train=True, transform=train_transform)
+        test_data = Data(root=self._path['root'], train=False, transform=test_transform)
 
         self._train_loader = DataLoader(train_data, batch_size=self._options['batch_size'],
                                         shuffle=True, num_workers=4, pin_memory=True)
