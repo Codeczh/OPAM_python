@@ -18,13 +18,7 @@ Install the environment as the 'requirements.txt'.
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt 
 ```
 Besides, you should install pytorch according your CUDA version 
-[https://pytorch.org/get-started/locally/](https://pytorch.org/get-started/locally/),
-and install [apex](https://github.com/NVIDIA/apex)
-```
-git clone https://github.com/NVIDIA/apex  
-cd apex  
-pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" .   
-```
+[https://pytorch.org/get-started/locally/](https://pytorch.org/get-started/locally/).
 
 ----------------------
 ### Command:  

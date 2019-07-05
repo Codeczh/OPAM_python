@@ -12,7 +12,7 @@ import yaml
 import numpy as np
 from PIL import Image
 import math
-from apex import amp
+#from apex import amp
 import argparse
 
 #os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -239,7 +239,7 @@ class Partnet(object):
         # Optimizer
         self._optimizer = torch.optim.SGD(self._net.parameters(), lr=self._options['base_lr'],
                                           momentum=0.9, weight_decay=self._options['weight_decay'])
-        self._net, self._optimizer = amp.initialize(self._net, self._optimizer, opt_level="O2")
+        #self._net, self._optimizer = amp.initialize(self._net, self._optimizer, opt_level="O2")
 
         self._scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self._optimizer, mode='max',
                                                                      factor=0.1, patience=3, verbose=True,
@@ -307,9 +307,9 @@ class Partnet(object):
                 num_total += label.size(0)  # y.size(0) is the batch size
                 num_correct += torch.sum(prediction == label.data).item()
                 # backward()
-                # loss.backward()
-                with amp.scale_loss(loss, self._optimizer) as scaled_loss:
-                    scaled_loss.backward()
+                loss.backward()
+                #with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                #    scaled_loss.backward()
                 self._optimizer.step()
             train_accuracy = 100 * num_correct / num_total
             test_image_accuracy = self.test(self._test_image_loader)

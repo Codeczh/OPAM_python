@@ -10,7 +10,6 @@ import math
 import random
 import argparse
 
-from apex import amp
 
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
