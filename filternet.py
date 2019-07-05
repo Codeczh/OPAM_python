@@ -94,7 +94,7 @@ class FilterNetManager(object):
         self._options = options
         self._path = path
         # Network
-        net = FilterNet(self._options['classnum'])
+        net = FilterNet(classnum = self._options['classnum'])
         # torch.cuda.set_device(0)
         self._net = net.cuda()
         # if torch.cuda.device_count() > 1:
